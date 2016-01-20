@@ -535,7 +535,7 @@ const float updateIncrement = 2.0f;
 - (void) pageDidLoad:(NSNotification *) notification
 {
     // Michael Brooks' homepage.js (https://github.com/phonegap/connect-phonegap/blob/master/res/middleware/homepage.js)
-    NSString* tapScript = @"javascript: console.log('adding homepage.js'); (function(){var e={},t={touchstart:'touchstart',touchend:'touchend'};if(window.navigator.msPointerEnabled){t={touchstart:'MSPointerDown',touchend:'MSPointerUp'}}document.addEventListener(t.touchstart,function(t){var n=t.touches||[t],r;for(var i=0,s=n.length;i<s;i++){r=n[i];e[r.identifier||r.pointerId]=r}},false);document.addEventListener(t.touchend,function(t){var n=Object.keys(e).length;e={};if(n===3){t.preventDefault();window.history.back(window.history.length)}},false)})(window)";
+    NSString* tapScript = @"javascript: console.log('adding homepage.js'); (function(){var e={},t={touchstart:'touchstart',touchend:'touchend'};if(window.navigator.msPointerEnabled){t={touchstart:'MSPointerDown',touchend:'MSPointerUp'}}document.addEventListener(t.touchstart,function(t){var n=t.touches||[t],r;for(var i=0,s=n.length;i<s;i++){r=n[i];e[r.identifier||r.pointerId]=r}},false);(window)";
     [super writeJavascript:tapScript];
 }
 
@@ -545,6 +545,7 @@ const float updateIncrement = 2.0f;
 
 - (void) statusBarTapped:(NSUInteger)numberOfTaps
 {
+    /*
     if (numberOfTaps != 2) {
         return;
     }
@@ -554,6 +555,8 @@ const float updateIncrement = 2.0f;
     } else {
         [self addNavigationBar];
     }
+    */
+    return;
 }
 
 @end
