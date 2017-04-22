@@ -31,6 +31,7 @@
 - (void) load:(CDVInvokedUrlCommand*)command;
 - (void) fetch:(CDVInvokedUrlCommand*)command;
 - (void) remove:(CDVInvokedUrlCommand*)command;
+- (void) Unload:(CDVInvokedUrlCommand*)command;
 
 @end
 
