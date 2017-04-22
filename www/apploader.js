@@ -33,6 +33,16 @@ AppLoader.prototype.load = function(failure) {
     );
 }
 
+AppLoader.prototype.Unload = function(failure) {
+    return cordova.exec(
+        null,
+        failure,
+        'AppLoader',
+        'Unload',
+        [ null ]
+    );
+}
+
 var appLoader = new AppLoader();
 
 module.exports = appLoader;
