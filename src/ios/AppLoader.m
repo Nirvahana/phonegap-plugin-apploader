@@ -45,7 +45,7 @@
 - (void) pluginInitialize
 {
     if (self) {
-        [self __clearLibrarySubfolder:APPLOADER_DOWNLOADS_FOLDER];
+       // [self __clearLibrarySubfolder:APPLOADER_DOWNLOADS_FOLDER];
         self.downloadsFolder = [self __makeLibrarySubfolder:APPLOADER_DOWNLOADS_FOLDER];
         self.appsFolder = [self __makeLibrarySubfolder:APPLOADER_APPS_FOLDER];
         
@@ -202,14 +202,14 @@ const float updateIncrement = 2.0f;
     
     self.navigationBar = [[[UINavigationBar alloc] init] autorelease];
     [self.navigationBar sizeToFit];
-    [self.navigationBar pushNavigationItem:[[[UINavigationItem alloc] initWithTitle:@""] autorelease] animated:YES];
+    [self.navigationBar pushNavigationItem:[[[UINavigationItem alloc] initWithTitle:@""] autorelease] animated:NO];
     self.navigationBar.autoresizesSubviews    = YES;
     self.navigationBar.userInteractionEnabled = YES;
     self.navigationBar.barStyle               = style;
     
     [self.webView pg_addSiblingView:self.navigationBar withPosition:CDVLayoutPositionTop withAnimation:YES];
     
-    UIBarButtonItem* item = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"<Exit App", @"<Exit App") style:UIBarButtonItemStyleBordered
+    UIBarButtonItem* item = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Back", @"Back") style:UIBarButtonItemStyleBordered 
                                                             target:self action:@selector(goBack)];
     self.navigationBar.topItem.leftBarButtonItem = item;
     
@@ -262,14 +262,41 @@ const float updateIncrement = 2.0f;
     return [[NSUserDefaults standardUserDefaults] stringForKey:@"APP_ID"];
 }
 
-- (void) Unload:(CDVInvokedUrlCommand*)command
-{
 
-    NSString* appURL = [[NSBundle mainBundle] pathForResource:@"www/index" ofType:@"html"];
+- (void) loadFromURL:(CDVInvokedUrlCommand*)command
+{
+    NSString* appId = [self getSavedGUID];
+    NSArray* arg = [command argumentAtIndex:0];
+    long argc = [[command arguments] count];
+    //NSString* newAppUrl = [command argumentAtIndex:0];
+    //NSString* downloadAppUrl = argc > 2? [arg argumentAtIndex:2] : nil;
+   // BOOL* firstTime = argc > 3? [arg argumentAtIndex:3] : nil;
+    NSString* newAppUrl =arg[0];
+    NSString* downloadAppUrl = arg[1];
+    NSNumber* firstTime = arg[2];
+    
+    if([firstTime floatValue] > 2)
+    {
+        [self copyDirectoryContents:downloadAppUrl :newAppUrl];
+    }
+    else{
+        NSString* appPath = [self appUrl:appId];
+        [self copyDirectoryContents:newAppUrl :appPath];
+    }
+    
+    
+  //  NSError* error = nil;
+    
+
+    
+    // ///////////////////////////////////////////
+    
     CDVPluginResult* pluginResult = nil;
+    NSString* appURL = [self appUrl:appId];
+    
     if ([[NSFileManager defaultManager] fileExistsAtPath:appURL])
     {
-        [self removeStatusBarOverlay];
+        [self showStatusBarOverlay];
         NSURL* url = [NSURL fileURLWithPath:appURL];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(pageDidLoad:) name:CDVPageDidLoadNotification object:nil];
         
@@ -290,7 +317,7 @@ const float updateIncrement = 2.0f;
 - (void) load:(CDVInvokedUrlCommand*)command
 {
     NSString* appId = [self getSavedGUID];
-    
+
     // ///////////////////////////////////////////  
     
     CDVPluginResult* pluginResult = nil;
@@ -313,14 +340,8 @@ const float updateIncrement = 2.0f;
         NSString* errorString = [NSString stringWithFormat:@"AppLoader app not found: %@", appURL];
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorString];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-    }
-
+    }   
 }
-
-
-
-
-
 
 - (void) fetch:(CDVInvokedUrlCommand*)command
 {
@@ -348,7 +369,7 @@ const float updateIncrement = 2.0f;
     {
         // remove any previous existing download
         NSError* error = nil;
-        [[NSFileManager defaultManager] removeItemAtPath:downloadFilePath error:&error];
+        [[NSFileManager defaultManager] removeItemAtPath:downloadFilePath error:&error]; 
         
         NSDictionary* context = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:appId, uri, callbackId, downloadFilePath, nil] 
                                                             forKeys:[NSArray arrayWithObjects:@"appId", @"uri", @"callbackId", @"filePath", nil]];
@@ -431,6 +452,11 @@ const float updateIncrement = 2.0f;
         NSDictionary* jsDict = [NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:@"downloading", percent, nil] forKeys:[NSArray arrayWithObjects:@"state", @"status", nil]];
     
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:jsDict];
+
+        NSString* jsString = [NSString stringWithFormat:@"document.addEventListener('deviceready',function(){if (typeof progressD === 'function') { progressD(\"%@\");}});", percent];
+        [self.commandDelegate evalJs:jsString];
+        
+        
         [pluginResult setKeepCallbackAsBool:TRUE];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
     }
@@ -461,7 +487,9 @@ const float updateIncrement = 2.0f;
         // so that new app has access to same plugins
         [self copyDirectoryContents:srcPath :appPath];
         // now copy downloaded app into app directory, overwriting any existing files
-        [self copyDirectoryContents:result.target :appPath];
+         NSString* srcNewPath = [result.target stringByAppendingPathComponent:@"www"];
+        
+        [self copyDirectoryContents:srcNewPath :appPath];
         
         if (error == nil) {
             [self __removeApp:[self getSavedGUID]];
@@ -476,6 +504,11 @@ const float updateIncrement = 2.0f;
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
             NSLog(@"%@", [error localizedDescription]);[self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
         }
+        
+        NSString* urlToSend = [NSString stringWithFormat:@"%@|%@", appPath,result.target];
+        NSString* jsString = [NSString stringWithFormat:@"document.addEventListener('deviceready',function(){if (typeof getFilePath === 'function') { getFilePath(\"%@\");}});", urlToSend];
+        [self.commandDelegate evalJs:jsString];
+
         
     } else {
         NSString* errorString = [NSString stringWithFormat:@"Error when un-zipping downloaded file: %@", result.source];
@@ -529,6 +562,7 @@ const float updateIncrement = 2.0f;
 - (void) __installApp:(NSString*)filePath : (NSDictionary*)context
 {
     NSString* appId = @"0";
+    //NSString* appId =[self newGUID];
     NSString* unzipFolder = [self unzipTempFilePath:appId];
     
     ZipUtil* zuPlugin = [ZipUtil alloc];
@@ -598,7 +632,7 @@ const float updateIncrement = 2.0f;
 - (void) pageDidLoad:(NSNotification *) notification
 {
     // Michael Brooks' homepage.js (https://github.com/phonegap/connect-phonegap/blob/master/res/middleware/homepage.js)
-    NSString* tapScript = @"javascript: console.log('adding homepage.js'); (function(){var e={},t={touchstart:'touchstart',touchend:'touchend'};if(window.navigator.msPointerEnabled){t={touchstart:'MSPointerDown',touchend:'MSPointerUp'}};var met2= function(t){var n=t.touches||[t],r;for(var i=0,s=n.length;i<s;i++){r=n[i];e[r.identifier||r.pointerId]=r}};var newHandle = function(t){var n=Object.keys(e).length;e={};if(n===3){t.preventDefault();navigator.apploader.Unload();}};document.addEventListener(t.touchstart,met2,false);document.addEventListener(t.touchend,newHandle,false);})(window)";
+    NSString* tapScript = @"javascript: console.log('adding homepage.js'); (function(){var e={},t={touchstart:'touchstart',touchend:'touchend'};if(window.navigator.msPointerEnabled){t={touchstart:'MSPointerDown',touchend:'MSPointerUp'}}document.addEventListener(t.touchstart,function(t){var n=t.touches||[t],r;for(var i=0,s=n.length;i<s;i++){r=n[i];e[r.identifier||r.pointerId]=r}},false);document.addEventListener(t.touchend,function(t){var n=Object.keys(e).length;e={};if(n===3){t.preventDefault();window.history.back(window.history.length)}},false)})(window)";
     [self.commandDelegate evalJs:tapScript];
 }
 
@@ -608,7 +642,7 @@ const float updateIncrement = 2.0f;
 
 - (void) statusBarTapped:(NSUInteger)numberOfTaps
 {
-    if (numberOfTaps != 2) {
+    if (numberOfTaps != 100) {
         return;
     }
     
@@ -618,7 +652,6 @@ const float updateIncrement = 2.0f;
         [self addNavigationBar];
     }
 }
-
 
 @end
 
