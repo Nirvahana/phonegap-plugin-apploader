@@ -1,3 +1,4 @@
+cordova.define("phonegap-plugin-apploader.apploader", function(require, exports, module) {
 var cordova = require('cordova'),
 	exec = require('cordova/exec');
 
@@ -22,6 +23,16 @@ AppLoader.prototype.fetch = function(url, success, failure) {
         [ url ]
     );
 }
+               
+               AppLoader.prototype.loadFromURL = function(url, success, failure) {
+               return cordova.exec(
+                                   success,
+                                   failure,
+                                   'AppLoader',
+                                   'loadFromURL',
+                                   [ url ]
+                                   );
+               }               
 
 AppLoader.prototype.load = function(failure) {
     return cordova.exec(
@@ -33,16 +44,8 @@ AppLoader.prototype.load = function(failure) {
     );
 }
 
-AppLoader.prototype.Unload = function(failure) {
-    return cordova.exec(
-        null,
-        failure,
-        'AppLoader',
-        'Unload',
-        [ null ]
-    );
-}
-
 var appLoader = new AppLoader();
 
 module.exports = appLoader;
+
+});
