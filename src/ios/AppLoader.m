@@ -280,7 +280,7 @@ const float updateIncrement = 2.0f;
         [self copyDirectoryContents:downloadAppUrl :newAppUrl];
     }
     else{
-        NSString* appPath = [self appUrl:appId];
+        NSString* appPath = [self appFilePath:appId];
         [self copyDirectoryContents:newAppUrl :appPath];
     }
     
@@ -313,6 +313,35 @@ const float updateIncrement = 2.0f;
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }
 }
+
+- (void) Unload:(CDVInvokedUrlCommand*)command
+{
+   NSString* appURL = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"www/index.html"];
+    
+    // ///////////////////////////////////////////
+
+    CDVPluginResult* pluginResult = nil;
+    
+    if ([[NSFileManager defaultManager] fileExistsAtPath:appURL])
+    {
+        [self showStatusBarOverlay];
+        NSURL* url = [NSURL fileURLWithPath:appURL];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(pageDidLoad:) name:CDVPageDidLoadNotification object:nil];
+        
+        // clear and disable cache
+        [[NSURLCache sharedURLCache] removeAllCachedResponses];
+        
+        [self.webViewEngine loadRequest:([NSURLRequest requestWithURL:url])];
+        [[[[UIApplication sharedApplication] delegate] window] makeKeyAndVisible];
+    }
+    else
+    {
+        NSString* errorString = [NSString stringWithFormat:@"AppLoader app not found: %@", appURL];
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorString];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }
+}
+
 
 - (void) load:(CDVInvokedUrlCommand*)command
 {
@@ -632,7 +661,7 @@ const float updateIncrement = 2.0f;
 - (void) pageDidLoad:(NSNotification *) notification
 {
     // Michael Brooks' homepage.js (https://github.com/phonegap/connect-phonegap/blob/master/res/middleware/homepage.js)
-    NSString* tapScript = @"javascript: console.log('adding homepage.js'); (function(){var e={},t={touchstart:'touchstart',touchend:'touchend'};if(window.navigator.msPointerEnabled){t={touchstart:'MSPointerDown',touchend:'MSPointerUp'}}document.addEventListener(t.touchstart,function(t){var n=t.touches||[t],r;for(var i=0,s=n.length;i<s;i++){r=n[i];e[r.identifier||r.pointerId]=r}},false);document.addEventListener(t.touchend,function(t){var n=Object.keys(e).length;e={};if(n===3){t.preventDefault();window.history.back(window.history.length)}},false)})(window)";
+    NSString* tapScript = @"javascript: console.log('adding homepage.js'); (function(){var e={},t={touchstart:'touchstart',touchend:'touchend'};if(window.navigator.msPointerEnabled){t={touchstart:'MSPointerDown',touchend:'MSPointerUp'}}document.addEventListener(t.touchstart,function(t){var n=t.touches||[t],r;for(var i=0,s=n.length;i<s;i++){r=n[i];e[r.identifier||r.pointerId]=r}},false);document.addEventListener(t.touchend,function(t){var n=Object.keys(e).length;e={};if(n===3){t.preventDefault(); navigator.apploader.Unload();}},false)})(window)";
     [self.commandDelegate evalJs:tapScript];
 }
 
