@@ -279,21 +279,21 @@ const float updateIncrement = 2.0f;
     {
         [self copyDirectoryContents:downloadAppUrl :newAppUrl];
     }
-    else{
-        NSString* appPath = [self appFilePath:appId];
-        [self copyDirectoryContents:newAppUrl :appPath];
-    }
-    
-    
-  //  NSError* error = nil;
+    //else{
+                 //NSString* appPath = [self appFilePath:appId];
+        //[self copyDirectoryContents:newAppUrl :appPath];
+   // }
+
     
 
     
     // ///////////////////////////////////////////
     
     CDVPluginResult* pluginResult = nil;
-    NSString* appURL = [self appUrl:appId];
-    
+    //NSString* appURL = [self appUrl:appId];
+    newAppUrl = [newAppUrl stringByAppendingPathComponent:@"index.html"];
+
+    NSString* appURL = newAppUrl;
     if ([[NSFileManager defaultManager] fileExistsAtPath:appURL])
     {
         [self showStatusBarOverlay];
